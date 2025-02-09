@@ -1,60 +1,81 @@
 package com.example.LMS.service;
 
-import com.example.LMS.model.Book;
-import com.example.LMS.model.User;
+import com.example.LMS.entity.Book;
+import com.example.LMS.entity.User;
+import com.example.LMS.exception.BookNotFoundException;
+import com.example.LMS.exception.UserNotFoundException;
+import com.example.LMS.exception.BookAlreadyBorrowedException;
+import com.example.LMS.exception.BookNotBorrowedException;
 import com.example.LMS.repository.BookRepository;
 import com.example.LMS.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 @Service
-public class BookService{
+public class BookService {
+    private final BookRepository bookRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private BookRepository bookRepository;
-    @Autowired
-    private UserRepository userRepository;
+    public BookService(BookRepository bookRepository, UserRepository userRepository) {
+        this.bookRepository = bookRepository;
+        this.userRepository = userRepository;
+    }
 
-
-    public List<Book> findAll(){
+    public List<Book> findAll() {
         return bookRepository.findAll();
     }
-    public Optional<Book> findById(long id){
-        return bookRepository.findById(id);
-    }
-    public Book save(Book book){
 
-        System.out.println("=====in save book====");
+    public Book findById(long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new BookNotFoundException("Book not found with ID: " + id));
+    }
+
+    public Book save(Book book) {
         return bookRepository.save(book);
     }
-    public void deleteById(long id){
+
+    public void deleteById(long id) {
+        if (!bookRepository.existsById(id)) {
+            throw new BookNotFoundException("Book not found with ID: " + id);
+        }
         bookRepository.deleteById(id);
     }
-    public Book update(Book book){
+
+    public Book update(long id, Book book) {
+        if (!bookRepository.existsById(id)) {
+            throw new BookNotFoundException("Book not found with ID: " + id);
+        }
+        book.setId(id);
         return bookRepository.save(book);
     }
-    public Book borrow(long id, long userId){
-        User user = userRepository.findById(userId).get();
 
-        Book book = findById(id).get();
-        System.out.println("=====in borrow book===="+ book.getAuthor());
-        if(bookRepository.existsById(id) && userRepository.existsById(userId) && !book.isBorrowed()){
-            book.setBorrowedby(user);
-            book.setBorrowed(true);
-            return save(book);
+    public Book borrow(long bookId, long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new BookNotFoundException("Book not found with ID: " + bookId));
+
+        if (book.isBorrowed()) {
+            throw new BookAlreadyBorrowedException("Book is already borrowed!");
         }
-        return null ;
-    }
-    public Book returnBook(long id){
-        Book book = findById(id).get();
-        if(bookRepository.existsById(id) && book.isBorrowed()){
-            book.setBorrowedby(null);
-            book.setBorrowed(false);
-            return save(book);
-        }
-        return null;
+
+        book.setBorrowedBy(user);
+        book.setBorrowed(true);
+        return bookRepository.save(book);
     }
 
+    public Book returnBook(long bookId) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new BookNotFoundException("Book not found with ID: " + bookId));
+
+        if (!book.isBorrowed()) {
+            throw new BookNotBorrowedException("Book is not currently borrowed!");
+        }
+
+        book.setBorrowedBy(null);
+        book.setBorrowed(false);
+        return bookRepository.save(book);
+    }
 }

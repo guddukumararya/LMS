@@ -1,46 +1,52 @@
 package com.example.LMS.controller;
 
-import com.example.LMS.model.Book;
+import com.example.LMS.entity.Book;
 import com.example.LMS.service.BookService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/books")
 public class BookController {
-    @Autowired
-    private BookService bookService;
+    private final BookService bookService;
+
+    public BookController(BookService bookService) {
+        this.bookService = bookService;
+    }
 
     @GetMapping
     public List<Book> getAllBooks() {
         return bookService.findAll();
     }
-    @GetMapping("/getBookById")
-    public Optional<Book> getBook(long id) {
+
+    @GetMapping("/{id}")
+    public Book getBookById(@PathVariable long id) {
         return bookService.findById(id);
     }
+
     @PostMapping
-    public Book addBook(@RequestBody Book book) {
-        return bookService.save(book);
+    public ResponseEntity<Book> addBook(@RequestBody Book book) {
+        return ResponseEntity.ok(bookService.save(book));
     }
-    @PutMapping
-    public Book updateBook(@RequestBody Book book) {
-        return bookService.save(book);
+
+    @PutMapping("/{id}")
+    public Book updateBook(@PathVariable long id, @RequestBody Book book) {
+        return bookService.update(id, book);
     }
+
     @DeleteMapping("/{id}")
     public void deleteBook(@PathVariable long id) {
         bookService.deleteById(id);
     }
 
-    @PostMapping("/borrowBook/{bookId}/{userId}")
-    public Book borrowBook(@PathVariable long bookId,@PathVariable long userId) {
-        System.out.println("hello");
+    @PostMapping("/borrow/{bookId}/{userId}")
+    public Book borrowBook(@PathVariable long bookId, @PathVariable long userId) {
         return bookService.borrow(bookId, userId);
     }
-    @PostMapping("/returnBook/{bookId}")
+
+    @PostMapping("/return/{bookId}")
     public Book returnBook(@PathVariable long bookId) {
         return bookService.returnBook(bookId);
     }
