@@ -1,2 +1,2 @@
-# Library Management System
-Library Management System is a computerized system which helps user(librarian) to manage the library daily activity in electronic format.
+# Mini Library Management System📚
+A simple Library Management System built using Java and Spring Boot (Basic) that allows users to manage books, borrow and return books, and handle user operations efficiently.
